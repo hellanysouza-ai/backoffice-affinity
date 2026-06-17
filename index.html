@@ -74,7 +74,7 @@ main{max-width:1180px;margin:0 auto;padding:1.75rem 1.5rem 5rem}
 .sc::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;border-radius:0 0 12px 12px}
 .sc.total::after{background:var(--purple)}
 .sc.green::after{background:var(--ok)}
-.sc.red::after{background:var(--danger)}
+.sc.amber::after{background:var(--warn)}
 .sc-label{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;
   color:var(--muted);margin-bottom:.4rem}
 .sc-value{font-size:1.45rem;font-weight:800;color:var(--text);line-height:1}
@@ -149,7 +149,7 @@ main{max-width:1180px;margin:0 auto;padding:1.75rem 1.5rem 5rem}
 /* BADGES */
 .badge{display:inline-block;padding:.18rem .55rem;border-radius:999px;
   font-size:.62rem;font-weight:700;white-space:nowrap}
-.badge-ok{background:var(--ok-bg);color:var(--ok)}
+.badge-obs{background:#fef3c7;color:#b45309}
 .badge-ended{background:var(--danger-bg);color:var(--danger)}
 .badge-future{background:var(--future-bg);color:var(--purple)}
 
@@ -158,7 +158,23 @@ main{max-width:1180px;margin:0 auto;padding:1.75rem 1.5rem 5rem}
 .alert-info{background:var(--purple-light);color:var(--purple-dark);border-color:#d4b0d4}
 .alert-warn{background:#fffbeb;color:#92400e;border-color:#fde68a}
 
-/* MODO EDIÇÃO */
+.global-bar-date-label{font-size:.72rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.06em;color:var(--muted);white-space:nowrap}
+.global-bar-date{font-size:.9rem;font-weight:700;color:var(--purple);
+  background:var(--purple-light);padding:.3rem .8rem;border-radius:8px;
+  border:1.5px solid var(--border);white-space:nowrap}
+.tc-debito-row{background:#fff8f8;border-top:1px dashed #fca5a5;
+  padding:.5rem 1rem;display:flex;align-items:center;gap:.6rem}
+.tc-debito-label{font-size:.7rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.06em;color:var(--danger);white-space:nowrap}
+.tc-debito-prefix{font-size:.78rem;font-weight:600;color:var(--danger)}
+.tc-debito-input{border:1.5px solid #fca5a5;border-radius:6px;padding:.28rem .5rem;
+  font-size:.78rem;font-family:inherit;color:var(--danger);width:110px;
+  outline:none;background:#fff;text-align:right;transition:border-color .15s}
+.tc-debito-input:focus{border-color:var(--danger)}
+.tc-debito-auto{font-size:.65rem;color:var(--muted);font-style:italic;white-space:nowrap}
+.tc-footer-net{font-size:.78rem;font-weight:700;color:var(--ok);white-space:nowrap}
+.tc-footer-net.negative{color:var(--danger)}
 .tc-edit-bar{display:none;background:var(--purple-pale);border-bottom:1px solid var(--border);
   padding:.45rem 1rem;align-items:center;justify-content:space-between;gap:.5rem}
 .tc-edit-bar.visible{display:flex}
@@ -224,8 +240,8 @@ main{max-width:1180px;margin:0 auto;padding:1.75rem 1.5rem 5rem}
 </header>
 
 <div class="global-bar">
-  <label for="reportDate">Data de assinatura</label>
-  <input type="date" id="reportDate" />
+  <span class="global-bar-date-label">Data de hoje</span>
+  <span class="global-bar-date" id="todayDisplay"></span>
   <button class="btn btn-purple" onclick="apurarTodos()">▶ Apurar todos</button>
   <div class="spacer"></div>
   <button class="base-upload-btn" onclick="document.getElementById('baseFileInput').click()">
@@ -247,17 +263,17 @@ main{max-width:1180px;margin:0 auto;padding:1.75rem 1.5rem 5rem}
     <div class="sc total">
       <div class="sc-label">Total a pagar</div>
       <div class="sc-value" id="sc-total">—</div>
-      <div class="sc-sub">soma de todas as equipes processadas</div>
+      <div class="sc-sub">soma líquida de todas as equipes</div>
     </div>
     <div class="sc green">
-      <div class="sc-label">Ativos</div>
+      <div class="sc-label">Equipes processadas</div>
       <div class="sc-value" id="sc-ativos">—</div>
-      <div class="sc-sub">elegíveis na data</div>
+      <div class="sc-sub">com relatório carregado</div>
     </div>
-    <div class="sc red">
-      <div class="sc-label">Inelegíveis</div>
-      <div class="sc-value" id="sc-inativo">—</div>
-      <div class="sc-sub">fora do período</div>
+    <div class="sc amber" style="--amber:#b45309">
+      <div class="sc-label">Total de débitos</div>
+      <div class="sc-value" id="sc-debitos">—</div>
+      <div class="sc-sub">descontados do líquido</div>
     </div>
   </div>
 
@@ -365,14 +381,16 @@ var BASE_TEAMS = [
 var teamState = {};
 function initState() {
   BASE_TEAMS.forEach(function(t) {
-    teamState[t.id] = { liquido: null, totalCard: null, fileName: null, processed: false };
+    teamState[t.id] = { liquido: null, totalCard: null, fileName: null, processed: false, debito: 0 };
   });
 }
 initState();
 
 // ── INIT ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
-  document.getElementById('reportDate').valueAsDate = new Date();
+  var today = new Date();
+  var display = document.getElementById('todayDisplay');
+  if (display) display.textContent = today.toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit',year:'numeric'});
   renderGrid();
 });
 
@@ -441,6 +459,18 @@ function buildCard(team) {
     '<div class="tc-footer">' +
       '<span class="tc-footer-label">Total apurado</span>' +
       '<span class="tc-footer-total" id="footer-total-' + team.id + '">—</span>' +
+    '</div>' +
+
+    '<div class="tc-debito-row" id="debito-row-' + team.id + '" style="display:none">' +
+      '<span class="tc-debito-label">Débito</span>' +
+      '<span class="tc-debito-prefix">− R$</span>' +
+      '<input class="tc-debito-input" type="number" min="0" step="0.01" ' +
+        'id="debito-input-' + team.id + '" placeholder="0,00" ' +
+        'oninput="recalcularLiquido(\'' + team.id + '\')" />' +
+      '<span class="tc-debito-auto" id="debito-hint-' + team.id + '"></span>' +
+      '<div style="flex:1"></div>' +
+      '<span style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Líquido&nbsp;</span>' +
+      '<span class="tc-footer-net" id="footer-net-' + team.id + '">—</span>' +
     '</div>';
   return wrap;
 }
@@ -570,31 +600,66 @@ function onFileSelected(event, teamId) {
   var reader = new FileReader();
   reader.onload = function(e) {
     try {
-      var wb   = XLSX.read(e.target.result, { type:'array', cellDates:true });
-      var ws   = wb.Sheets[wb.SheetNames[0]];
-      var rows = XLSX.utils.sheet_to_json(ws, { header:1, raw:true, defval:null });
+      var wb  = XLSX.read(e.target.result, { type:'array', cellDates:true });
+      var ws  = wb.Sheets[wb.SheetNames[0]];
 
-      // Busca linha "Total de Comissionamento das Operadoras:" → coluna 35 = Líquido
-      var liquido = null;
-      for (var i = 0; i < rows.length; i++) {
-        var row = rows[i];
-        var c1  = String(row[1] || '').trim();
-        if (/Total de Comissionamento das Operadoras/i.test(c1)) {
-          var v = parseFloat(String(row[35] || '').replace(',', '.'));
-          if (!isNaN(v)) { liquido = v; break; }
-          // fallback: última coluna numérica da mesma linha
-          for (var j = row.length - 1; j >= 0; j--) {
-            var vf = parseFloat(String(row[j] || '').replace(',', '.'));
-            if (!isNaN(vf) && vf > 0) { liquido = vf; break; }
-          }
-          break;
+      // raw=true: c10 vem como Date object, c35 vem como number
+      var rowsRaw = XLSX.utils.sheet_to_json(ws, { header:1, raw:true, defval:null });
+
+      var propostas    = [];
+      var debitosFixos = 0;
+
+      for (var i = 0; i < rowsRaw.length; i++) {
+        var row = rowsRaw[i] || [];
+        while (row.length < 36) row.push(null);
+
+        var c1  = row[1];
+        var c10 = row[10];
+        var c35 = row[35];
+
+        var c1str = String(c1 == null ? '' : c1).trim();
+
+        // Pula linhas vazias e totais
+        if (!c1str && c35 == null) continue;
+        if (/Total de Comissionamento|SubTotal|Extrato|Resumo|Código da Comissão|Geração|Previsão|Nome:____/i.test(c1str)) continue;
+        if (/^Assistente/i.test(c1str)) continue;
+
+        // c10 = 'Assinatura' (cabeçalho) → pula
+        if (c10 === 'Assinatura' || c10 === 'Cadastro') continue;
+
+        // c35 deve ser número
+        var liq35 = (typeof c35 === 'number') ? c35 : parseFloat(String(c35 || '').replace(',','.'));
+        if (isNaN(liq35)) continue;
+
+        // Débito fixo: negativo sem data (c10 null)
+        if (liq35 < 0 && !(c10 instanceof Date)) {
+          debitosFixos += Math.abs(liq35);
+          continue;
+        }
+
+        // Proposta: c10 é Date e liq35 positivo
+        if (c10 instanceof Date && liq35 > 0) {
+          propostas.push({ data: dateOnly(c10), liquido: liq35 });
         }
       }
 
-      teamState[teamId].liquido    = liquido;
-      teamState[teamId].fileName   = file.name;
-      teamState[teamId].processed  = false;
-      teamState[teamId].totalCard  = null;
+      var liquido = propostas.reduce(function(s,p){ return s + p.liquido; }, 0);
+
+      teamState[teamId].liquido      = liquido;
+      teamState[teamId].propostas    = propostas;
+      teamState[teamId].debitosFixos = debitosFixos;
+      teamState[teamId].debito       = debitosFixos;  // pré-preenche o campo
+      teamState[teamId].fileName     = file.name;
+      teamState[teamId].processed    = false;
+      teamState[teamId].totalCard    = null;
+
+      // Preenche campo de débito automaticamente
+      var debitoInput = document.getElementById('debito-input-' + teamId);
+      var debitoHint  = document.getElementById('debito-hint-'  + teamId);
+      if (debitoInput) {
+        debitoInput.value = debitosFixos > 0 ? debitosFixos.toFixed(2) : '';
+        if (debitoHint) debitoHint.textContent = debitosFixos > 0 ? '(lido do arquivo)' : '';
+      }
 
       // Upload strip
       var strip = document.getElementById('strip-' + teamId);
@@ -602,10 +667,12 @@ function onFileSelected(event, teamId) {
       document.getElementById('fname-' + teamId).textContent = '📄 ' + file.name;
 
       // Action row
-      var lbl = liquido !== null
-        ? 'Líquido encontrado: ' + fmtBRL(liquido) + ' — clique em Processar'
-        : '⚠️ Valor líquido não encontrado — verifique o arquivo';
-      document.getElementById('action-label-' + teamId).textContent = lbl;
+      var lbl = propostas.length > 0
+        ? propostas.length + ' propostas &nbsp;·&nbsp; Bruto: <strong>' + fmtBRL(liquido) + '</strong>'
+          + (debitosFixos > 0 ? ' &nbsp;·&nbsp; Débito: <strong>− ' + fmtBRL(debitosFixos) + '</strong>' : '')
+          + ' &nbsp;— clique em <strong>Processar</strong>'
+        : '⚠️ Nenhuma proposta encontrada — verifique o arquivo';
+      document.getElementById('action-label-' + teamId).innerHTML = lbl;
       document.getElementById('action-' + teamId).classList.add('visible');
 
       // Reset processed
@@ -622,48 +689,70 @@ function onFileSelected(event, teamId) {
 }
 
 // ── PROCESSAR CARD ───────────────────────────────────────────────────────────
-// Regra: cada membro ELEGÍVEL recebe o valor líquido TOTAL do relatório (não dividido).
-// Total do card = liquido × nº de elegíveis.
+// Cada membro recebe a soma das propostas cujas datas de assinatura
+// estejam dentro do seu período (start/end). Sem filtro = recebe tudo.
+// Débito manual é descontado de cada valor individualmente.
 function processarCard(teamId) {
-  var dateInput = document.getElementById('reportDate').value;
-  if (!dateInput) { showAlert('warn', '⚠️ Informe a data de assinatura antes de processar.'); return; }
-
-  var ref   = dateOnly(new Date(dateInput + 'T00:00:00'));
   var team  = BASE_TEAMS.filter(function(t) { return t.id === teamId; })[0];
   var state = teamState[teamId];
 
-  if (state.liquido === null) {
-    showAlert('warn', 'Nenhum valor líquido encontrado no arquivo da equipe ' + team.name + '.');
+  if (!state.propostas || state.propostas.length === 0) {
+    showAlert('warn', 'Nenhuma proposta encontrada no arquivo da equipe ' + team.name + '.');
     return;
   }
+
+  var debitoInput = document.getElementById('debito-input-' + teamId);
+  var debito = debitoInput ? (parseFloat(debitoInput.value) || 0) : (state.debito || 0);
+  state.debito = debito;
 
   var totalCard = 0;
 
   team.members.forEach(function(m) {
-    var status = getStatus(m, ref);
-    var isOk   = status.code === 'ok';
     var badgeEl = document.getElementById('badge-' + teamId + '-' + m.code);
-    var valEl   = document.getElementById('val-' + teamId + '-' + m.code);
+    var valEl   = document.getElementById('val-'   + teamId + '-' + m.code);
 
-    if (badgeEl) { badgeEl.className = 'badge ' + badgeClass(status.code); badgeEl.textContent = status.label; }
-    if (valEl) {
-      valEl.textContent = fmtBRL(state.liquido);
-      if (isOk) {
-        valEl.className = 'tc-member-value';
+    // Filtra propostas pelo período do membro
+    var valorFinal = calcularValorMembro(m, state.propostas, debito);
+
+    // Badge
+    if (badgeEl) {
+      if (m.obs) {
+        badgeEl.className   = 'badge badge-obs';
+        badgeEl.textContent = 'Ver obs.';
       } else {
-        valEl.className = 'tc-member-value muted';
+        badgeEl.className   = 'badge badge-ok';
+        badgeEl.textContent = 'Ativo';
       }
     }
+
+    // Valor
+    if (valEl) {
+      valEl.className   = 'tc-member-value';
+      valEl.textContent = fmtBRL(valorFinal);
+    }
+
+    totalCard += valorFinal;
   });
 
-  // Total apurado = valor líquido do relatório (independente do nº de elegíveis)
-  totalCard = state.liquido;
-  state.totalCard  = totalCard;
+  state.totalCard  = state.liquido; // total bruto do relatório
+  state.liquidoNet = totalCard;     // soma dos membros (já com débito)
   state.processed  = true;
 
+  // Footer total bruto
   var ftEl = document.getElementById('footer-total-' + teamId);
   ftEl.className   = 'tc-footer-total done';
-  ftEl.textContent = fmtBRL(totalCard);
+  ftEl.textContent = fmtBRL(state.liquido);
+
+  // Mostra linha de débito
+  var debitoRow = document.getElementById('debito-row-' + teamId);
+  if (debitoRow) debitoRow.style.display = 'flex';
+
+  // Líquido no footer = soma dos valores dos membros
+  var netEl = document.getElementById('footer-net-' + teamId);
+  if (netEl) {
+    netEl.textContent = fmtBRL(totalCard);
+    netEl.className   = 'tc-footer-net' + (totalCard < 0 ? ' negative' : '');
+  }
 
   document.getElementById('card-' + teamId).classList.add('processed');
   document.getElementById('action-' + teamId).classList.remove('visible');
@@ -671,43 +760,64 @@ function processarCard(teamId) {
   updateSummary();
 }
 
-// ── APURAR TODOS ─────────────────────────────────────────────────────────────
-function apurarTodos() {
-  var dateInput = document.getElementById('reportDate').value;
-  if (!dateInput) { showAlert('warn', '⚠️ Informe a data de assinatura do relatório.'); return; }
+// ── DÉBITO E LÍQUIDO FINAL ───────────────────────────────────────────────────
+function recalcularLiquido(teamId) {
+  var state = teamState[teamId];
+  if (!state || !state.propostas || !state.processed) return;
 
+  var input  = document.getElementById('debito-input-' + teamId);
+  var debito = input ? (parseFloat(input.value) || 0) : 0;
+  state.debito = debito;
+
+  var team      = BASE_TEAMS.filter(function(t) { return t.id === teamId; })[0];
+  var totalCard = 0;
+
+  team.members.forEach(function(m) {
+    var valEl = document.getElementById('val-' + teamId + '-' + m.code);
+    var valor = calcularValorMembro(m, state.propostas, debito);
+    if (valEl) valEl.textContent = fmtBRL(valor);
+    totalCard += valor;
+  });
+
+  state.liquidoNet = totalCard;
+
+  var netEl = document.getElementById('footer-net-' + teamId);
+  if (netEl) {
+    netEl.textContent = fmtBRL(totalCard);
+    netEl.className   = 'tc-footer-net' + (totalCard < 0 ? ' negative' : '');
+  }
+
+  updateSummary();
+}
+
+
+function apurarTodos() {
   var processados = 0;
   BASE_TEAMS.forEach(function(team) {
     var st = teamState[team.id];
     if (st.liquido !== null && !st.processed) { processarCard(team.id); processados++; }
     else if (st.processed) processados++;
   });
-
   updateSummary();
-  var fmt = new Date(dateInput + 'T00:00:00').toLocaleDateString('pt-BR');
-  showAlert('info', '✅ Apuração em <strong>' + fmt + '</strong> — ' + processados + ' equipe(s) processadas.');
+  showAlert('info', '✅ ' + processados + ' equipe(s) processadas.');
 }
 
 // ── SUMMARY ──────────────────────────────────────────────────────────────────
 function updateSummary() {
-  var dateInput = document.getElementById('reportDate').value;
-  if (!dateInput) return;
-  var ref = dateOnly(new Date(dateInput + 'T00:00:00'));
+  var grand = 0, equipes = 0, totalDebitos = 0;
 
-  var grand = 0, ativos = 0, inativo = 0;
   BASE_TEAMS.forEach(function(team) {
     var st = teamState[team.id];
     if (!st.processed) return;
-    grand += st.totalCard || 0;
-    team.members.forEach(function(m) {
-      if (getStatus(m, ref).code === 'ok') ativos++;
-      else inativo++;
-    });
+    equipes++;
+    totalDebitos += st.debito || 0;
+    var val = (st.liquidoNet !== undefined && st.liquidoNet !== null) ? st.liquidoNet : (st.totalCard || 0);
+    grand += val;
   });
 
   document.getElementById('sc-total').textContent   = fmtBRL(grand);
-  document.getElementById('sc-ativos').textContent  = ativos;
-  document.getElementById('sc-inativo').textContent = inativo;
+  document.getElementById('sc-ativos').textContent  = equipes;
+  document.getElementById('sc-debitos').textContent = fmtBRL(totalDebitos);
   document.getElementById('summaryRow').style.display = 'grid';
 }
 
@@ -921,6 +1031,35 @@ function showAlert(type, html) {
   box.className = 'alert alert-' + type;
   box.innerHTML = html;
   box.style.display = 'block';
+}
+
+// Converte data do relatório (ISO ou DD/MM/YYYY) para objeto Date (somente data)
+function parseDataProposta(s) {
+  if (!s) return null;
+  s = String(s).trim();
+  // Formato ISO: "2026-05-07 00:00:00" ou "2026-05-07"
+  var mISO = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (mISO) return new Date(parseInt(mISO[1]), parseInt(mISO[2])-1, parseInt(mISO[3]));
+  // Formato BR: "07/05/2026"
+  var mBR = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  if (mBR) return new Date(parseInt(mBR[3]), parseInt(mBR[2])-1, parseInt(mBR[1]));
+  return null;
+}
+
+// Calcula o valor de um membro filtrando as propostas pelo seu período
+function calcularValorMembro(m, propostas, debito) {
+  var startDate = m.start ? dateOnly(parseBRDate(m.start)) : null;
+  var endDate   = m.end   ? dateOnly(parseBRDate(m.end))   : null;
+
+  var propsFiltradas = propostas.filter(function(p) {
+    var d = dateOnly(p.data instanceof Date ? p.data : new Date(p.data));
+    if (startDate && d.getTime() < startDate.getTime()) return false;
+    if (endDate   && d.getTime() > endDate.getTime())   return false;
+    return true;
+  });
+
+  var bruto = propsFiltradas.reduce(function(s, p) { return s + p.liquido; }, 0);
+  return Math.max(0, bruto - debito);
 }
 </script>
 </body>
