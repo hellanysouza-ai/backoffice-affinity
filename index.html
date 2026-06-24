@@ -603,43 +603,70 @@ function onFileSelected(event, teamId) {
       var wb  = XLSX.read(e.target.result, { type:'array', cellDates:true });
       var ws  = wb.Sheets[wb.SheetNames[0]];
 
-      // raw=true: c10 vem como Date object, c35 vem como number
+      // raw=true para ter tipos reais (Date, number, string)
       var rowsRaw = XLSX.utils.sheet_to_json(ws, { header:1, raw:true, defval:null });
+
+      // ── Detecta automaticamente a coluna do Líquido ──────────────────
+      // Procura linha de cabeçalho com "Líquido" e registra o índice
+      var colLiquido = 35; // padrão ComissaoReport
+      for (var h = 0; h < Math.min(20, rowsRaw.length); h++) {
+        var hrow = rowsRaw[h] || [];
+        for (var hc = 0; hc < hrow.length; hc++) {
+          if (String(hrow[hc] || '').trim() === 'Líquido') {
+            colLiquido = hc;
+            break;
+          }
+        }
+      }
 
       var propostas    = [];
       var debitosFixos = 0;
 
       for (var i = 0; i < rowsRaw.length; i++) {
         var row = rowsRaw[i] || [];
-        while (row.length < 36) row.push(null);
+        while (row.length <= colLiquido) row.push(null);
 
-        var c1  = row[1];
-        var c10 = row[10];
-        var c35 = row[35];
+        var c1raw  = row[1];
+        var c10raw = row[10];
+        var c35raw = row[colLiquido];
 
-        var c1str = String(c1 == null ? '' : c1).trim();
+        var c1str = String(c1raw == null ? '' : c1raw).trim();
 
-        // Pula linhas vazias e totais
-        if (!c1str && c35 == null) continue;
+        // Pula linhas vazias e de totais/cabeçalho
+        if (!c1str && c35raw == null) continue;
         if (/Total de Comissionamento|SubTotal|Extrato|Resumo|Código da Comissão|Geração|Previsão|Nome:____/i.test(c1str)) continue;
         if (/^Assistente/i.test(c1str)) continue;
+        if (c10raw === 'Assinatura' || c10raw === 'Cadastro') continue;
 
-        // c10 = 'Assinatura' (cabeçalho) → pula
-        if (c10 === 'Assinatura' || c10 === 'Cadastro') continue;
+        // Líquido: deve ser número
+        var liq = (typeof c35raw === 'number') ? c35raw : parseFloat(String(c35raw || '').replace(',','.'));
+        if (isNaN(liq)) continue;
 
-        // c35 deve ser número
-        var liq35 = (typeof c35 === 'number') ? c35 : parseFloat(String(c35 || '').replace(',','.'));
-        if (isNaN(liq35)) continue;
+        // Débito fixo: negativo sem data (c10 nulo ou não-data)
+        var temData = (c10raw instanceof Date) || (typeof c10raw === 'string' && /\d{4}/.test(c10raw));
+        if (liq < 0 && !temData) { debitosFixos += Math.abs(liq); continue; }
 
-        // Débito fixo: negativo sem data (c10 null)
-        if (liq35 < 0 && !(c10 instanceof Date)) {
-          debitosFixos += Math.abs(liq35);
-          continue;
-        }
+        // Proposta: tem data em c10 e líquido positivo
+        if (liq > 0 && temData) {
+          var dataAss = null;
 
-        // Proposta: c10 é Date e liq35 positivo
-        if (c10 instanceof Date && liq35 > 0) {
-          propostas.push({ data: dateOnly(c10), liquido: liq35 });
+          // 1) Date object
+          if (c10raw instanceof Date) {
+            dataAss = dateOnly(c10raw);
+          }
+          // 2) String ISO "2026-05-20 00:00:00" ou "2026-05-20"
+          else if (typeof c10raw === 'string') {
+            var mISO = c10raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+            if (mISO) dataAss = new Date(+mISO[1], +mISO[2]-1, +mISO[3]);
+          }
+          // 3) Número serial Excel
+          else if (typeof c10raw === 'number' && c10raw > 1000) {
+            dataAss = dateOnly(new Date(new Date(1899,11,30).getTime() + c10raw * 86400000));
+          }
+
+          if (dataAss && !isNaN(dataAss.getTime())) {
+            propostas.push({ data: dataAss, liquido: liq });
+          }
         }
       }
 
