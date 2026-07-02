@@ -163,17 +163,25 @@ main{max-width:1180px;margin:0 auto;padding:1.75rem 1.5rem 5rem}
 .global-bar-date{font-size:.9rem;font-weight:700;color:var(--purple);
   background:var(--purple-light);padding:.3rem .8rem;border-radius:8px;
   border:1.5px solid var(--border);white-space:nowrap}
-.tc-debito-row{background:#fff8f8;border-top:1px dashed #fca5a5;
-  padding:.5rem 1rem;display:flex;align-items:center;gap:.6rem}
-.tc-debito-label{font-size:.7rem;font-weight:700;text-transform:uppercase;
-  letter-spacing:.06em;color:var(--danger);white-space:nowrap}
-.tc-debito-prefix{font-size:.78rem;font-weight:600;color:var(--danger)}
-.tc-debito-input{border:1.5px solid #fca5a5;border-radius:6px;padding:.28rem .5rem;
-  font-size:.78rem;font-family:inherit;color:var(--danger);width:110px;
-  outline:none;background:#fff;text-align:right;transition:border-color .15s}
-.tc-debito-input:focus{border-color:var(--danger)}
-.tc-debito-auto{font-size:.65rem;color:var(--muted);font-style:italic;white-space:nowrap}
-.tc-footer-net{font-size:.78rem;font-weight:700;color:var(--ok);white-space:nowrap}
+.tc-debito-row{background:#fafafa;border-top:1px dashed var(--border);
+  padding:.35rem .8rem;display:flex;align-items:center;gap:.35rem;flex-wrap:nowrap}
+.tc-dc-label{font-size:.62rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.05em;white-space:nowrap}
+.tc-dc-label.deb{color:var(--danger)}
+.tc-dc-label.cre{color:var(--ok)}
+.tc-dc-prefix{font-size:.7rem;font-weight:600}
+.tc-dc-prefix.deb{color:var(--danger)}
+.tc-dc-prefix.cre{color:var(--ok)}
+.tc-dc-input{border:1.5px solid var(--border);border-radius:5px;
+  padding:.2rem .35rem;font-size:.72rem;font-family:inherit;
+  width:75px;outline:none;background:#fff;text-align:right}
+.tc-dc-input.deb{color:var(--danger);border-color:#fca5a5}
+.tc-dc-input.deb:focus{border-color:var(--danger)}
+.tc-dc-input.cre{color:var(--ok);border-color:#86efac}
+.tc-dc-input.cre:focus{border-color:var(--ok)}
+.tc-dc-sep{color:var(--border);margin:0 .2rem}
+.tc-debito-auto{font-size:.58rem;color:var(--muted);font-style:italic;white-space:nowrap}
+.tc-footer-net{font-size:.82rem;font-weight:800;color:var(--ok);white-space:nowrap}
 .tc-footer-net.negative{color:var(--danger)}
 .tc-edit-bar{display:none;background:var(--purple-pale);border-bottom:1px solid var(--border);
   padding:.45rem 1rem;align-items:center;justify-content:space-between;gap:.5rem}
@@ -462,14 +470,20 @@ function buildCard(team) {
     '</div>' +
 
     '<div class="tc-debito-row" id="debito-row-' + team.id + '" style="display:none">' +
-      '<span class="tc-debito-label">Débito</span>' +
-      '<span class="tc-debito-prefix">− R$</span>' +
-      '<input class="tc-debito-input" type="number" min="0" step="0.01" ' +
+      '<span class="tc-dc-label deb">−Déb</span>' +
+      '<span class="tc-dc-prefix deb">R$</span>' +
+      '<input class="tc-dc-input deb" type="number" min="0" step="0.01" ' +
         'id="debito-input-' + team.id + '" placeholder="0,00" ' +
         'oninput="recalcularLiquido(\'' + team.id + '\')" />' +
       '<span class="tc-debito-auto" id="debito-hint-' + team.id + '"></span>' +
-      '<div style="flex:1"></div>' +
-      '<span style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Líquido&nbsp;</span>' +
+      '<span class="tc-dc-sep">|</span>' +
+      '<span class="tc-dc-label cre">+Cré</span>' +
+      '<span class="tc-dc-prefix cre">R$</span>' +
+      '<input class="tc-dc-input cre" type="number" min="0" step="0.01" ' +
+        'id="credito-input-' + team.id + '" placeholder="0,00" ' +
+        'oninput="recalcularLiquido(\'' + team.id + '\')" />' +
+      '<span style="flex:1"></span>' +
+      '<span style="font-size:.62rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap">Líq&nbsp;</span>' +
       '<span class="tc-footer-net" id="footer-net-' + team.id + '">—</span>' +
     '</div>';
   return wrap;
@@ -606,21 +620,19 @@ function onFileSelected(event, teamId) {
       // raw=true para ter tipos reais (Date, number, string)
       var rowsRaw = XLSX.utils.sheet_to_json(ws, { header:1, raw:true, defval:null });
 
-      // ── Detecta automaticamente a coluna do Líquido ──────────────────
-      // Procura linha de cabeçalho com "Líquido" e registra o índice
-      var colLiquido = 35; // padrão ComissaoReport
-      for (var h = 0; h < Math.min(20, rowsRaw.length); h++) {
+      // ── Detecta coluna do Líquido ────────────────────────────────────
+      var colLiquido = 35;
+      for (var h = 0; h < Math.min(25, rowsRaw.length); h++) {
         var hrow = rowsRaw[h] || [];
         for (var hc = 0; hc < hrow.length; hc++) {
-          if (String(hrow[hc] || '').trim() === 'Líquido') {
-            colLiquido = hc;
-            break;
-          }
+          if (String(hrow[hc] || '').trim() === 'Líquido') { colLiquido = hc; break; }
         }
       }
 
-      var propostas    = [];
-      var debitosFixos = 0;
+      // ── Extrai apenas propostas com data de assinatura ───────────────
+      // Débito e crédito são sempre preenchidos manualmente pelo usuário
+      var propostas  = [];
+      var debitosFixos = 0; // sempre zero — campo manual
 
       for (var i = 0; i < rowsRaw.length; i++) {
         var row = rowsRaw[i] || [];
@@ -628,48 +640,40 @@ function onFileSelected(event, teamId) {
 
         var c1raw  = row[1];
         var c10raw = row[10];
-        var c35raw = row[colLiquido];
+        var cLiq   = row[colLiquido];
 
         var c1str = String(c1raw == null ? '' : c1raw).trim();
 
-        // Pula linhas vazias e de totais/cabeçalho
-        if (!c1str && c35raw == null) continue;
+        // Pula linhas de cabeçalho/totais/resumo
+        if (!c1str && cLiq == null) continue;
         if (/Total de Comissionamento|SubTotal|Extrato|Resumo|Código da Comissão|Geração|Previsão|Nome:____/i.test(c1str)) continue;
-        if (/^Assistente/i.test(c1str)) continue;
+        if (/^Assistente|^Total de Créd|^Débitos$/i.test(c1str)) continue;
         if (c10raw === 'Assinatura' || c10raw === 'Cadastro') continue;
 
-        // Líquido: deve ser número
-        var liq = (typeof c35raw === 'number') ? c35raw : parseFloat(String(c35raw || '').replace(',','.'));
-        if (isNaN(liq)) continue;
-
-        // Débito fixo: negativo sem data (c10 nulo ou não-data)
-        var temData = (c10raw instanceof Date) || (typeof c10raw === 'string' && /\d{4}/.test(c10raw));
-        if (liq < 0 && !temData) { debitosFixos += Math.abs(liq); continue; }
+        var liq = (typeof cLiq === 'number') ? cLiq : parseFloat(String(cLiq || '').replace(',','.'));
+        if (isNaN(liq) || liq <= 0) continue; // ignora negativos (estornos/débitos)
 
         // Proposta: tem data em c10 e líquido positivo
-        if (liq > 0 && temData) {
-          var dataAss = null;
+        var dataAss = null;
+        if (c10raw instanceof Date) {
+          dataAss = dateOnly(c10raw);
+        } else if (typeof c10raw === 'string' && /\d{4}/.test(c10raw)) {
+          var mISO = c10raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+          if (mISO) dataAss = new Date(+mISO[1], +mISO[2]-1, +mISO[3]);
+          else {
+            var mBR = c10raw.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+            if (mBR) dataAss = new Date(+mBR[3], +mBR[2]-1, +mBR[1]);
+          }
+        } else if (typeof c10raw === 'number' && c10raw > 1000) {
+          dataAss = dateOnly(new Date(new Date(1899,11,30).getTime() + c10raw * 86400000));
+        }
 
-          // 1) Date object
-          if (c10raw instanceof Date) {
-            dataAss = dateOnly(c10raw);
-          }
-          // 2) String ISO "2026-05-20 00:00:00" ou "2026-05-20"
-          else if (typeof c10raw === 'string') {
-            var mISO = c10raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
-            if (mISO) dataAss = new Date(+mISO[1], +mISO[2]-1, +mISO[3]);
-          }
-          // 3) Número serial Excel
-          else if (typeof c10raw === 'number' && c10raw > 1000) {
-            dataAss = dateOnly(new Date(new Date(1899,11,30).getTime() + c10raw * 86400000));
-          }
-
-          if (dataAss && !isNaN(dataAss.getTime())) {
-            propostas.push({ data: dataAss, liquido: liq });
-          }
+        if (dataAss && !isNaN(dataAss.getTime())) {
+          propostas.push({ data: dataAss, liquido: liq });
         }
       }
 
+      // Total bruto = soma das propostas (sem descontos)
       var liquido = propostas.reduce(function(s,p){ return s + p.liquido; }, 0);
 
       teamState[teamId].liquido      = liquido;
@@ -728,9 +732,12 @@ function processarCard(teamId) {
     return;
   }
 
-  var debitoInput = document.getElementById('debito-input-' + teamId);
-  var debito = debitoInput ? (parseFloat(debitoInput.value) || 0) : (state.debito || 0);
-  state.debito = debito;
+  var debitoInput  = document.getElementById('debito-input-'  + teamId);
+  var creditoInput = document.getElementById('credito-input-' + teamId);
+  var debito  = debitoInput  ? (parseFloat(debitoInput.value)  || 0) : (state.debito  || 0);
+  var credito = creditoInput ? (parseFloat(creditoInput.value) || 0) : (state.credito || 0);
+  state.debito  = debito;
+  state.credito = credito;
 
   var totalCard = 0;
 
@@ -739,7 +746,7 @@ function processarCard(teamId) {
     var valEl   = document.getElementById('val-'   + teamId + '-' + m.code);
 
     // Filtra propostas pelo período do membro
-    var valorFinal = calcularValorMembro(m, state.propostas, debito);
+    var valorFinal = calcularValorMembro(m, state.propostas, debito, credito);
 
     // Badge
     if (badgeEl) {
@@ -792,16 +799,19 @@ function recalcularLiquido(teamId) {
   var state = teamState[teamId];
   if (!state || !state.propostas || !state.processed) return;
 
-  var input  = document.getElementById('debito-input-' + teamId);
-  var debito = input ? (parseFloat(input.value) || 0) : 0;
-  state.debito = debito;
+  var debInput = document.getElementById('debito-input-'  + teamId);
+  var creInput = document.getElementById('credito-input-' + teamId);
+  var debito  = debInput ? (parseFloat(debInput.value) || 0) : 0;
+  var credito = creInput ? (parseFloat(creInput.value) || 0) : 0;
+  state.debito  = debito;
+  state.credito = credito;
 
   var team      = BASE_TEAMS.filter(function(t) { return t.id === teamId; })[0];
   var totalCard = 0;
 
   team.members.forEach(function(m) {
     var valEl = document.getElementById('val-' + teamId + '-' + m.code);
-    var valor = calcularValorMembro(m, state.propostas, debito);
+    var valor = calcularValorMembro(m, state.propostas, debito, credito);
     if (valEl) valEl.textContent = fmtBRL(valor);
     totalCard += valor;
   });
@@ -1074,7 +1084,8 @@ function parseDataProposta(s) {
 }
 
 // Calcula o valor de um membro filtrando as propostas pelo seu período
-function calcularValorMembro(m, propostas, debito) {
+function calcularValorMembro(m, propostas, debito, credito) {
+  credito = credito || 0;
   var startDate = m.start ? dateOnly(parseBRDate(m.start)) : null;
   var endDate   = m.end   ? dateOnly(parseBRDate(m.end))   : null;
 
@@ -1086,7 +1097,7 @@ function calcularValorMembro(m, propostas, debito) {
   });
 
   var bruto = propsFiltradas.reduce(function(s, p) { return s + p.liquido; }, 0);
-  return Math.max(0, bruto - debito);
+  return Math.max(0, bruto - debito + credito);
 }
 </script>
 </body>
