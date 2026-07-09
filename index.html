@@ -423,7 +423,7 @@ function buildCard(team) {
         (team.rule ? '<span class="rule-tag">' + team.rule + '</span>' : '') +
         '<span class="tc-count" id="count-' + team.id + '">' + team.members.length + ' pessoas</span>' +
         '<button class="btn-edit" onclick="abrirEdicao(\'' + team.id + '\')">✎ Editar</button>' +
-        '<button class="btn-del-team" onclick="excluirEquipe(\'' + team.id + '\', \'' + team.name + '\')" title="Excluir equipe">✕</button>' +
+        '<button class="btn-del-team" data-tid="' + team.id + '" data-tname="' + team.name.replace(/"/g,'&quot;') + '" onclick="excluirEquipe(this.dataset.tid, this.dataset.tname)" title="Excluir equipe">✕</button>' +
         '<span class="processed-tick">✓ Processado</span>' +
       '</div>' +
     '</div>' +
