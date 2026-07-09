@@ -186,7 +186,10 @@ main{max-width:1180px;margin:0 auto;padding:1.75rem 1.5rem 5rem}
 .tc-edit-bar{display:none;background:var(--purple-pale);border-bottom:1px solid var(--border);
   padding:.45rem 1rem;align-items:center;justify-content:space-between;gap:.5rem}
 .tc-edit-bar.visible{display:flex}
-.btn-edit{background:transparent;border:1.5px solid rgba(255,255,255,.35);border-radius:6px;
+.btn-del-team{background:rgba(255,255,255,.12);border:none;color:rgba(255,255,255,.6);
+  font-size:.75rem;font-weight:700;border-radius:5px;padding:.18rem .45rem;
+  cursor:pointer;transition:background .15s,color .15s;line-height:1}
+.btn-del-team:hover{background:rgba(220,38,38,.7);color:#fff}
   color:rgba(255,255,255,.85);font-size:.68rem;font-weight:700;font-family:inherit;
   padding:.2rem .6rem;cursor:pointer;transition:background .15s}
 .btn-edit:hover{background:rgba(255,255,255,.15)}
@@ -420,6 +423,7 @@ function buildCard(team) {
         (team.rule ? '<span class="rule-tag">' + team.rule + '</span>' : '') +
         '<span class="tc-count" id="count-' + team.id + '">' + team.members.length + ' pessoas</span>' +
         '<button class="btn-edit" onclick="abrirEdicao(\'' + team.id + '\')">✎ Editar</button>' +
+        '<button class="btn-del-team" onclick="excluirEquipe(\'' + team.id + '\', \'' + team.name + '\')" title="Excluir equipe">✕</button>' +
         '<span class="processed-tick">✓ Processado</span>' +
       '</div>' +
     '</div>' +
@@ -528,13 +532,29 @@ function fecharEdicao(teamId) {
   if (actionRow) actionRow.style.display = '';
 }
 
+function excluirEquipe(teamId, teamName) {
+  if (!confirm('Excluir a equipe "' + teamName + '"? Esta ação não pode ser desfeita.')) return;
+
+  var idx = -1;
+  for (var k = 0; k < BASE_TEAMS.length; k++) {
+    if (BASE_TEAMS[k].id === teamId) { idx = k; break; }
+  }
+  if (idx >= 0) BASE_TEAMS.splice(idx, 1);
+  delete teamState[teamId];
+
+  var card = document.getElementById('card-' + teamId);
+  if (card) card.remove();
+
+  updateSummary();
+}
+
 function makeEditRow(teamId, code, name, obs, idx) {
   var tr = document.createElement('tr');
   tr.id  = 'erow-' + teamId + '-' + idx;
   tr.innerHTML =
     '<td><input class="edit-input" style="width:80px" value="' + esc(code) + '" placeholder="Código" data-field="code" /></td>' +
     '<td><input class="edit-input" value="' + esc(name) + '" placeholder="Nome completo" data-field="name" /></td>' +
-    '<td><input class="edit-input" value="' + esc(obs)  + '" placeholder='  + '"Recebe até dd/mm/aaaa" data-field="obs" /></td>' +
+    '<td><input class="edit-input" value="' + esc(obs)  + '" placeholder="Recebe até dd/mm/aaaa" data-field="obs" /></td>' +
     '<td><button class="btn-del-row" onclick="delEditRow(this)" title="Remover">✕</button></td>';
   return tr;
 }
@@ -614,19 +634,28 @@ function onFileSelected(event, teamId) {
   var reader = new FileReader();
   reader.onload = function(e) {
     try {
-      var wb  = XLSX.read(e.target.result, { type:'array', cellDates:true });
+      var wb  = XLSX.read(e.target.result, { type:'array', cellDates:true, cellNF:false, cellText:false });
       var ws  = wb.Sheets[wb.SheetNames[0]];
 
       // raw=true para ter tipos reais (Date, number, string)
       var rowsRaw = XLSX.utils.sheet_to_json(ws, { header:1, raw:true, defval:null });
 
       // ── Detecta coluna do Líquido ────────────────────────────────────
-      var colLiquido = 35;
-      for (var h = 0; h < Math.min(25, rowsRaw.length); h++) {
+      // Varre todas as linhas e usa a coluna onde "Líquido" aparece mais vezes
+      var colCount = {};
+      for (var h = 0; h < rowsRaw.length; h++) {
         var hrow = rowsRaw[h] || [];
         for (var hc = 0; hc < hrow.length; hc++) {
-          if (String(hrow[hc] || '').trim() === 'Líquido') { colLiquido = hc; break; }
+          if (String(hrow[hc] || '').trim() === 'Líquido') {
+            colCount[hc] = (colCount[hc] || 0) + 1;
+          }
         }
+      }
+      // Pega a coluna com mais ocorrências de "Líquido"
+      var colLiquido = 35;
+      var maxCount = 0;
+      for (var col in colCount) {
+        if (colCount[col] > maxCount) { maxCount = colCount[col]; colLiquido = parseInt(col); }
       }
 
       // ── Extrai apenas propostas com data de assinatura ───────────────
@@ -657,10 +686,12 @@ function onFileSelected(event, teamId) {
         var dataAss = null;
         if (c10raw instanceof Date) {
           dataAss = dateOnly(c10raw);
-        } else if (typeof c10raw === 'string' && /\d{4}/.test(c10raw)) {
+        } else if (typeof c10raw === 'string' && c10raw.length >= 8) {
+          // ISO com espaço: "2026-04-23 00:00:00" ou sem: "2026-04-23" ou "2026-04-23T..."
           var mISO = c10raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
           if (mISO) dataAss = new Date(+mISO[1], +mISO[2]-1, +mISO[3]);
           else {
+            // BR: "23/04/2026"
             var mBR = c10raw.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
             if (mBR) dataAss = new Date(+mBR[3], +mBR[2]-1, +mBR[1]);
           }
