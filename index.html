@@ -363,24 +363,25 @@ function initState() {
 initState();
 
 // ── INIT ─────────────────────────────────────────────────────────────────────
-// URL do arquivo base no mesmo repositório GitHub Pages
-var BASE_URL = './base_backoffice.xlsx';
+// URL do arquivo base — mesmo domínio do GitHub Pages
+var BASE_URL = window.location.origin + window.location.pathname.replace('index.html','') + 'base_backoffice.xlsx';
 
 document.addEventListener('DOMContentLoaded', function() {
   var today = new Date();
   var display = document.getElementById('todayDisplay');
   if (display) display.textContent = today.toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit',year:'numeric'});
 
-  // Tenta carregar base_backoffice.xlsx do repositório
-  carregarBaseRemota();
-});
+  // Renderiza imediatamente com a base local
+  renderGrid();
 
-function carregarBaseRemota() {
-  showAlert('info', '⏳ Carregando base de equipes...');
+  // Tenta atualizar em segundo plano com base_backoffice.xlsx do repositório
+  var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  var timer = controller ? setTimeout(function() { controller.abort(); }, 5000) : null;
 
-  fetch(BASE_URL + '?v=' + Date.now())
+  fetch(BASE_URL, controller ? { signal: controller.signal } : {})
     .then(function(res) {
-      if (!res.ok) throw new Error('Arquivo não encontrado');
+      if (timer) clearTimeout(timer);
+      if (!res.ok) throw new Error('não encontrado');
       return res.arrayBuffer();
     })
     .then(function(buffer) {
@@ -391,16 +392,15 @@ function carregarBaseRemota() {
       if (teams.length > 0) {
         BASE_TEAMS = teams;
         initState();
+        renderGrid();
         showAlert('info', '✅ Base atualizada: <strong>' + teams.length + ' equipes</strong> carregadas do repositório.');
       }
-      renderGrid();
     })
     .catch(function() {
-      // Fallback: usa a base hardcoded
-      showAlert('info', '📋 Usando base local — suba <strong>base_backoffice.xlsx</strong> no repositório para atualizar.');
-      renderGrid();
+      if (timer) clearTimeout(timer);
+      // Silencioso — usa a base local sem mostrar erro
     });
-}
+});
 
 // ── PARSER DA BASE ───────────────────────────────────────────────────────────
 function parsearBase(raw) {
