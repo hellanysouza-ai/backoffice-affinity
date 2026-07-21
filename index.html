@@ -50,13 +50,6 @@ header{background:var(--purple);height:60px;padding:0 2rem;display:flex;align-it
 .btn-outline:hover{border-color:var(--purple);background:var(--purple-pale)}
 
 /* ATUALIZAR BASE */
-.base-upload-btn{display:flex;align-items:center;gap:.4rem;background:var(--purple-light);
-  color:var(--purple);border:1.5px solid var(--border);border-radius:8px;
-  padding:.38rem .85rem;font-size:.78rem;font-weight:700;font-family:inherit;
-  cursor:pointer;white-space:nowrap;transition:background .15s,border-color .15s}
-.base-upload-btn:hover{background:#e8d5e8;border-color:var(--purple)}
-.base-status{font-size:.68rem;color:var(--muted);white-space:nowrap}
-
 /* PROCESSAR btn */
 .btn-process{background:var(--purple);color:#fff;border-radius:8px;padding:.36rem .85rem;
   font-size:.74rem;font-weight:700;font-family:inherit;cursor:pointer;border:none;
@@ -255,15 +248,6 @@ main{max-width:1180px;margin:0 auto;padding:1.75rem 1.5rem 5rem}
   <span class="global-bar-date" id="todayDisplay"></span>
   <button class="btn btn-purple" onclick="apurarTodos()">▶ Apurar todos</button>
   <div class="spacer"></div>
-  <button class="base-upload-btn" onclick="document.getElementById('baseFileInput').click()">
-    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-      <polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/>
-      <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/>
-    </svg>
-    Atualizar base de backs
-  </button>
-  <input type="file" id="baseFileInput" accept=".xlsx,.xls" style="display:none" onchange="atualizarBase(event)" />
-  <span class="base-status" id="baseStatus"></span>
   <button class="btn btn-outline" onclick="window.print()">Imprimir</button>
 </div>
 
@@ -293,98 +277,79 @@ main{max-width:1180px;margin:0 auto;padding:1.75rem 1.5rem 5rem}
 
 <script>
 // ── BASE DE EQUIPES ──────────────────────────────────────────────────────────
-// Fonte: BACKOFFICE - NOVO.xlsx (16 equipes, 43 membros)
+// Fonte: BACKOFFICE - NOVO.xlsx (15 equipes, 42 membros)
 var BASE_TEAMS = [
   { id:'ABC', name:'ABC', rule:'VALOR CHEIO', members:[
-    {code:'136940', name:'Marli',    obs:'',                             start:null,         end:null},
-    {code:'148245', name:'Wendy',    obs:'Recebe até 17/04/2026',        start:null,         end:'17/04/2026'},
-    {code:'207404', name:'Larissa',  obs:'Recebe até 30/01/2026',        start:null,         end:'30/01/2026'},
-    {code:'206448', name:'Thauane',  obs:'Recebe a partir de 06/02/2026',start:'06/02/2026', end:null},
-    {code:'211901', name:'Jessica',  obs:'',                             start:null,         end:null},
+    {code:'136940', name:'Marli',    obs:'',                              start:null,         end:null},
+    {code:'148245', name:'Wendy',    obs:'Recebe até 17/04/2026',         start:null,         end:'17/04/2026'},
+    {code:'207404', name:'Larissa',  obs:'Recebe até 30/01/2026',         start:null,         end:'30/01/2026'},
+    {code:'206448', name:'Thauane',  obs:'Recebe a partir de 06/02/2026', start:'06/02/2026', end:null},
+    {code:'211901', name:'Jessica',  obs:'',                              start:null,         end:null},
   ]},
   { id:'AP', name:'AP', rule:'1% e lançar o valor cheio', members:[
-    {code:'204970', name:'Camila',   obs:'',                             start:null,         end:null},
-    {code:'204865', name:'Gabriel',  obs:'',                             start:null,         end:null},
-    {code:'207287', name:'Beatriz',  obs:'A partir de 01/05/2025',       start:'01/05/2025', end:null},
+    {code:'204970', name:'Camila',  obs:'', start:null, end:null},
+    {code:'204865', name:'Gabriel', obs:'', start:null, end:null},
+    {code:'207287', name:'Beatriz', obs:'A partir de 01/05/2025', start:'01/05/2025', end:null},
   ]},
   { id:'TM', name:'TM', rule:'1% e lançar o valor cheio', members:[
-    {code:'66401',  name:'Myllena',  obs:'Recebe até 12/01/2026',        start:null,         end:'12/01/2026'},
-    {code:'116467', name:'Débora',   obs:'',                             start:null,         end:null},
-    {code:'207574', name:'Elaindy',  obs:'Recebe a partir de 09/02/2026',start:'09/02/2026', end:null},
-    {code:'206021', name:'Leticia',  obs:'',                             start:null,         end:null},
+    {code:'66401',  name:'Myllena', obs:'Recebe até 12/01/2026',          start:null,         end:'12/01/2026'},
+    {code:'116467', name:'Débora',  obs:'',                               start:null,         end:null},
+    {code:'207574', name:'Elaindy', obs:'Recebe a partir de 09/02/2026',  start:'09/02/2026', end:null},
+    {code:'206021', name:'Leticia', obs:'',                               start:null,         end:null},
   ]},
-  { id:'JB', name:'JB', rule:'1,5% - Comissão colegiada', members:[
-    {code:'207663', name:'Leonardo', obs:'',                             start:null,         end:null},
-    {code:'208009', name:'Raquel',   obs:'',                             start:null,         end:null},
-  ]},
-  { id:'MP', name:'MP', rule:'1% e lançar o valor cheio', members:[
-    {code:'67570',  name:'Adeliz',   obs:'',                             start:null,         end:null},
-    {code:'207822', name:'Michael',  obs:'',                             start:null,         end:null},
-  ]},
-  { id:'JKL', name:'JKL', rule:'1,5% - Comissão colegiada', members:[
-    {code:'206878', name:'Daniela',  obs:'',                             start:null,         end:null},
-    {code:'208810', name:'Thayna',   obs:'',                             start:null,         end:null},
-  ]},
-  { id:'LG', name:'LG', rule:'1% e lançar o valor cheio', members:[
-    {code:'67570',  name:'Adeliz',   obs:'',                             start:null,         end:null},
-    {code:'208156', name:'Heloise',  obs:'',                             start:null,         end:null},
-  ]},
-  { id:'SL', name:'SL', rule:'1% e lançar o valor cheio', members:[
-    {code:'207413', name:'Melanie',  obs:'',                             start:null,         end:null},
-    {code:'51204',  name:'Philipe',  obs:'',                             start:null,         end:null},
-  ]},
-  { id:'GV', name:'GV', rule:'1% e lançar o valor cheio', members:[
-    {code:'207559', name:'Marina',   obs:'',                             start:null,         end:null},
-    {code:'206546', name:'Larissa',  obs:'',                             start:null,         end:null},
+  { id:'JB', name:'JB', rule:'1% e lançar o valor cheio', members:[
+    {code:'207663', name:'Leonardo',       obs:'',                              start:null,         end:null},
+    {code:'208009', name:'Raquel',         obs:'',                              start:null,         end:null},
+    {code:'208625', name:'Vitor Mesquita', obs:'A partir de 21/07/2026',        start:'21/07/2026', end:null},
   ]},
   { id:'BACKOFFICE---RIO-MO', name:'BACKOFFICE - RIO MO', rule:'1% e lançar o valor cheio', members:[
-    {code:'208625', name:'Vitor',    obs:'',                             start:null,         end:null},
-    {code:'208810', name:'Thayna',   obs:'Recebe até 17/05/2026',        start:null,         end:'17/05/2026'},
-    {code:'217107', name:'Thiago',   obs:'A partir de 18/05/2026',       start:'18/05/2026', end:null},
+    {code:'208625', name:'Vitor',  obs:'',                        start:null,         end:null},
+    {code:'208810', name:'Thayna', obs:'Recebe até 17/05/2026',   start:null,         end:'17/05/2026'},
+    {code:'217107', name:'Thiago', obs:'A partir de 18/05/2026',  start:'18/05/2026', end:null},
   ]},
   { id:'BACKOFFICE---RIO-FT', name:'BACKOFFICE - RIO FT', rule:'1% e lançar o valor cheio', members:[
-    {code:'209835', name:'Anderson', obs:'',                             start:null,         end:null},
-    {code:'208338', name:'Weslley',  obs:'',                             start:null,         end:null},
-    {code:'211273', name:'Paola',    obs:'A partir de 20/05/2026',       start:'20/05/2026', end:null},
+    {code:'209835', name:'Anderson', obs:'',                       start:null,         end:null},
+    {code:'208338', name:'Weslley',  obs:'',                       start:null,         end:null},
+    {code:'211273', name:'Paola',    obs:'A partir de 20/05/2026', start:'20/05/2026', end:null},
   ]},
-  { id:'BACKOFFICE---RIO-IF', name:'BACKOFFICE - RIO IF', rule:'1% e lançar o valor cheio', members:[
-    {code:'207723', name:'Anna',     obs:'',                             start:null,         end:null},
-    {code:'212849', name:'Suellen',  obs:'',                             start:null,         end:null},
+  { id:'GV', name:'GV', rule:'1% e lançar o valor cheio', members:[
+    {code:'207559', name:'Marina',  obs:'', start:null, end:null},
+    {code:'206546', name:'Larissa', obs:'', start:null, end:null},
   ]},
   { id:'BACKOFFICE---TS', name:'BACKOFFICE - TS', rule:'1% e lançar o valor cheio', members:[
-    {code:'67570',  name:'Adeliz',   obs:'Recebe até 18/11/2025',        start:null,         end:'18/11/2025'},
-    {code:'209270', name:'Kelly',    obs:'A partir de 20/12/2025',       start:'20/12/2025', end:null},
-    {code:'202118', name:'Larissa',  obs:'',                             start:null,         end:null},
+    {code:'67570',  name:'Adeliz', obs:'Recebe até 18/11/2025',   start:null,         end:'18/11/2025'},
+    {code:'209270', name:'Kelly',  obs:'A partir de 20/12/2025',  start:'20/12/2025', end:null},
+    {code:'202118', name:'Larissa',obs:'',                        start:null,         end:null},
   ]},
   { id:'BACKOFFICE---IS', name:'BACKOFFICE - IS', rule:'1% e lançar o valor cheio', members:[
-    {code:'212920', name:'Thamara',  obs:'',                             start:null,         end:null},
-    {code:'212916', name:'Beatriz',  obs:'',                             start:null,         end:null},
-    {code:'214784', name:'Vinicius', obs:'',                             start:null,         end:null},
+    {code:'212920', name:'Thamara',  obs:'', start:null, end:null},
+    {code:'212916', name:'Beatriz',  obs:'', start:null, end:null},
+    {code:'214784', name:'Vinicius', obs:'', start:null, end:null},
   ]},
-  { id:'BACKOFFICE---RIO--LL', name:'BACKOFFICE - RIO  LL', rule:'1% e lançar o valor cheio', members:[
-    {code:'209515', name:'Ana Beatriz', obs:'',                          start:null,         end:null},
-    {code:'203289', name:'Cecília',  obs:'',                             start:null,         end:null},
-    {code:'217111', name:'Talita',   obs:'A partir de 18/05/2026',       start:'18/05/2026', end:null},
+  { id:'BACKOFFICE---RIO--LL', name:'BACKOFFICE - RIO LL', rule:'1% e lançar o valor cheio', members:[
+    {code:'209515', name:'Ana Beatriz', obs:'',                       start:null,         end:null},
+    {code:'203289', name:'Cecília',     obs:'',                       start:null,         end:null},
+    {code:'217111', name:'Talita',      obs:'A partir de 18/05/2026', start:'18/05/2026', end:null},
   ]},
   { id:'BACKOFFICE---MB', name:'BACKOFFICE - MB', rule:'1% e lançar o valor cheio', members:[
-    {code:'200738', name:'Barbara',  obs:'Recebe até 17/02/2026',        start:null,         end:'17/02/2026'},
-    {code:'214215', name:'Pedro',    obs:'',                             start:null,         end:null},
-  ]},
-  { id:'BACKOFFICE---JG', name:'BACKOFFICE - JG', rule:'1% e lançar o valor cheio', members:[
-    {code:'214031', name:'Renata Taffi',   obs:'',                       start:null,         end:null},
-    {code:'51204',  name:'Philipe Gomes',  obs:'',                       start:null,         end:null},
+    {code:'200738', name:'Barbara', obs:'Recebe até 17/02/2026', start:null, end:'17/02/2026'},
+    {code:'214215', name:'Pedro',   obs:'',                      start:null, end:null},
   ]},
   { id:'BACKOFFICE-JUNDIAI', name:'BACKOFFICE JUNDIAI', rule:'1% e lançar o valor cheio', members:[
     {code:'216102', name:'Amanda Santos',  obs:'A partir de 18/02/2026', start:'18/02/2026', end:null},
     {code:'210854', name:'Daiana Almeida', obs:'',                       start:null,         end:null},
   ]},
   { id:'BACKOFFICE-CV', name:'BACKOFFICE CV', rule:'1% e lançar o valor cheio', members:[
-    {code:'204968', name:'Alessandra', obs:'',                           start:null,         end:null},
-    {code:'216488', name:'Dandara',    obs:'A partir de 01/04/2026',     start:'01/04/2026', end:null},
+    {code:'204968', name:'Alessandra', obs:'',                       start:null,         end:null},
+    {code:'216488', name:'Dandara',    obs:'A partir de 01/04/2026', start:'01/04/2026', end:null},
   ]},
   { id:'BACKOFFICE-NN', name:'BACKOFFICE NN', rule:'1% e lançar o valor cheio', members:[
-    {code:'216715', name:'Jessyka',  obs:'A partir de 02/04/2026',       start:'02/04/2026', end:null},
-    {code:'217067', name:'Jessica',  obs:'A partir de 11/05/2026',       start:'11/05/2026', end:null},
+    {code:'216715', name:'Jessyka', obs:'A partir de 02/04/2026', start:'02/04/2026', end:null},
+    {code:'217067', name:'Jessica', obs:'A partir de 11/05/2026', start:'11/05/2026', end:null},
+  ]},
+  { id:'BACKOFFICE---RIO--JL', name:'BACKOFFICE - RIO JL', rule:'1% e lançar o valor cheio', members:[
+    {code:'204616', name:'Andressa', obs:'',                       start:null,         end:null},
+    {code:'217107', name:'Thiago',   obs:'A partir de 21/07/2026', start:'21/07/2026', end:null},
   ]},
 ];
 
@@ -398,12 +363,90 @@ function initState() {
 initState();
 
 // ── INIT ─────────────────────────────────────────────────────────────────────
+// URL do arquivo base no mesmo repositório GitHub Pages
+var BASE_URL = './base_backoffice.xlsx';
+
 document.addEventListener('DOMContentLoaded', function() {
   var today = new Date();
   var display = document.getElementById('todayDisplay');
   if (display) display.textContent = today.toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit',year:'numeric'});
-  renderGrid();
+
+  // Tenta carregar base_backoffice.xlsx do repositório
+  carregarBaseRemota();
 });
+
+function carregarBaseRemota() {
+  showAlert('info', '⏳ Carregando base de equipes...');
+
+  fetch(BASE_URL + '?v=' + Date.now())
+    .then(function(res) {
+      if (!res.ok) throw new Error('Arquivo não encontrado');
+      return res.arrayBuffer();
+    })
+    .then(function(buffer) {
+      var wb  = XLSX.read(buffer, { type:'array' });
+      var ws  = wb.Sheets[wb.SheetNames[0]];
+      var raw = XLSX.utils.sheet_to_json(ws, { header:1, raw:false, defval:'' });
+      var teams = parsearBase(raw);
+      if (teams.length > 0) {
+        BASE_TEAMS = teams;
+        initState();
+        showAlert('info', '✅ Base atualizada: <strong>' + teams.length + ' equipes</strong> carregadas do repositório.');
+      }
+      renderGrid();
+    })
+    .catch(function() {
+      // Fallback: usa a base hardcoded
+      showAlert('info', '📋 Usando base local — suba <strong>base_backoffice.xlsx</strong> no repositório para atualizar.');
+      renderGrid();
+    });
+}
+
+// ── PARSER DA BASE ───────────────────────────────────────────────────────────
+function parsearBase(raw) {
+  var teams = [], current = null;
+
+  for (var i = 0; i < raw.length; i++) {
+    var row = raw[i].map(function(v) { return String(v == null ? '' : v).trim(); });
+    while (row.length < 8) row.push('');
+    var c1 = row[1], c2 = row[2], c6 = row[6];
+
+    if (/relat[oó]rio|regra de distribui/i.test(c1 + c2)) continue;
+
+    // Nome da equipe: c1 preenchido, c2 vazio, sem código, sem keywords
+    var isTeam = c1 && !c2
+      && !(/\d{4,7}/.test(c1))
+      && !(/recebe|a partir|at[eé]|%|lan[cç]ar|colegiada|valor cheio/i.test(c1))
+      && c1.length < 60;
+    if (isTeam) {
+      var tid = c1.toUpperCase().replace(/\s+/g,'-').replace(/[^A-Z0-9\-]/g,'');
+      current = { id: tid, name: c1, rule: '', members: [] };
+      teams.push(current);
+      continue;
+    }
+
+    if (!current) continue;
+
+    // Regra
+    var isRule = c2 && !(/\d{4,7}|\(\d/.test(c2))
+      && (/1[%,]|lan[cç]ar|colegiada|valor cheio/i.test(c2));
+    if (isRule) { if (!current.rule) current.rule = c2; continue; }
+
+    // Membro: c2 tem código
+    var hasMember = c2 && (/\(\d{4,7}\)/.test(c2) || /^\d{4,7}\s*[-\u2013]/.test(c2));
+    if (hasMember) {
+      var parsed  = parseCodeName(c2);
+      var display = (c6 && !/\d/.test(c6)) ? c6 : parsed.name;
+      var obs     = c1;
+      var isObs   = /recebe|a partir|at[eé]\s*\d/i.test(obs);
+      var finalObs = isObs ? obs : '';
+      var start   = extractDateObs(finalObs, 'start');
+      var end     = extractDateObs(finalObs, 'end');
+      current.members.push({ code: parsed.code, name: display, obs: finalObs, start: start, end: end });
+    }
+  }
+  return teams.filter(function(t) { return t.members.length > 0; });
+}
 
 function renderGrid() {
   var grid = document.getElementById('teamsGrid');
@@ -889,164 +932,7 @@ function updateSummary() {
   document.getElementById('summaryRow').style.display = 'grid';
 }
 
-// ── ATUALIZAR BASE DE BACKS ──────────────────────────────────────────────────
-// Layout real da planilha BACKOFFICE:
-//   Nome da equipe : col[1] sozinho na linha
-//   Membro         : col[2] = "NOME (código)" ou "código - NOME", col[1] = obs, col[6] = nome display
-//   Regra          : col[2] sem padrão de código (1%, lançar, etc.)
-function atualizarBase(event) {
-  var file = event.target.files[0];
-  if (!file) return;
 
-  var btn = document.querySelector('.base-upload-btn');
-  btn.textContent = '⏳ Lendo...';
-
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      var wb   = XLSX.read(e.target.result, { type:'array' });
-      var ws   = wb.Sheets[wb.SheetNames[0]];
-      var raw  = XLSX.utils.sheet_to_json(ws, { header:1, raw:false, defval:'' });
-
-      var newTeams = [];
-      var current  = null;
-
-      for (var i = 0; i < raw.length; i++) {
-        // Normaliza: array de strings limpas, sem nulls
-        var row = raw[i].map(function(v) { return String(v == null ? '' : v).trim(); });
-
-        // Pula linhas totalmente vazias
-        var nonEmpty = row.filter(function(v) { return v !== ''; });
-        if (nonEmpty.length === 0) continue;
-
-        // Pula cabeçalhos globais
-        var rowStr = nonEmpty.join(' ');
-        if (/relat[oó]rio backoffice|regra de distribui/i.test(rowStr)) continue;
-
-        // Detecta se alguma célula tem padrão de membro: "NOME (12345)" ou "12345 - NOME"
-        var memberCell = '';
-        var obsCell    = '';
-        for (var c = 0; c < row.length; c++) {
-          var cell = row[c];
-          if (/\(\d{4,7}\)/.test(cell) || /^\d{4,7}\s*[-\u2013]/.test(cell)) {
-            memberCell = cell;
-            // A observação está na célula anterior não-vazia
-            for (var prev = c - 1; prev >= 0; prev--) {
-              if (row[prev] !== '') { obsCell = row[prev]; break; }
-            }
-            break;
-          }
-        }
-
-        if (memberCell) {
-          if (!current) continue;
-          var parsed  = parseCodeName(memberCell);
-          // Nome display: busca célula que seja texto puro (sem dígitos longos, sem keywords)
-          // Prioriza células que parecem nomes: só letras/espaços, tamanho razoável
-          var display = parsed.name;
-          var bestScore = -1;
-          for (var nc = 0; nc < row.length; nc++) {
-            var cv = row[nc];
-            if (!cv || cv === memberCell || cv === obsCell) continue;
-            if (/\d{4,7}/.test(cv)) continue;           // tem código numérico longo
-            if (/\(\d/.test(cv)) continue;              // tem código entre parênteses
-            if (/recebe|a partir|at[eé]|%|lan[cç]ar|colegiada|valor cheio/i.test(cv)) continue;
-            if (/^\d+([.,]\d+)?$/.test(cv)) continue;   // é só número (valor)
-            if (cv.length < 2 || cv.length > 50) continue;
-            // Pontua: prefere células com letras, sem números
-            var score = /^[A-Za-zÀ-ÖØ-öø-ÿ\s]+$/.test(cv) ? 2 : 1;
-            if (score > bestScore) { bestScore = score; display = cv; }
-          }
-          var isRealObs = /recebe|a partir|at[eé]\s+\d/i.test(obsCell);
-          var finalObs  = isRealObs ? obsCell : '';
-          var start = extractDateObs(finalObs, 'start');
-          var end   = extractDateObs(finalObs, 'end');
-          current.members.push({ code: parsed.code, name: display, obs: finalObs, start: start, end: end });
-          continue;
-        }
-
-        // Detecta regra (1%, lançar, colegiada, valor cheio) — sem código de membro
-        var isRule = /1[%,]|lan[cç]ar|colegiada|valor cheio/i.test(rowStr)
-                  && !/\d{4,7}/.test(rowStr);
-        if (isRule) {
-          if (current && !current.rule) {
-            current.rule = nonEmpty.join(' ').replace(/\s+/g,' ').trim();
-          }
-          continue;
-        }
-
-        // Detecta nome de equipe: linha com apenas 1 célula não-vazia, sem código, sem obs-keywords
-        var isTeam = nonEmpty.length === 1
-          && !(/\d{4,7}/.test(nonEmpty[0]))
-          && !(/recebe|a partir|at[eé]|%|lan[cç]ar|colegiada|valor cheio/i.test(nonEmpty[0]))
-          && nonEmpty[0].length >= 2 && nonEmpty[0].length < 60;
-
-        if (isTeam) {
-          var tname = nonEmpty[0];
-          var tid   = tname.toUpperCase().replace(/\s+/g,'-').replace(/[^A-Z0-9\-]/g,'');
-          current = { id: tid, name: tname, rule: '', members: [] };
-          newTeams.push(current);
-          continue;
-        }
-      }
-
-      var valid = newTeams.filter(function(t) { return t.members.length > 0; });
-
-      if (valid.length === 0) {
-        document.getElementById('baseStatus').textContent = '⚠️ Nenhuma equipe encontrada';
-        btn.innerHTML = '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/></svg> Atualizar base de backs';
-        showAlert('warn', '⚠️ Nenhuma equipe encontrada no arquivo. Verifique o formato.');
-        return;
-      }
-
-      // Atualiza BASE_TEAMS: merge por id ou name
-      valid.forEach(function(newT) {
-        var idx = -1;
-        for (var k = 0; k < BASE_TEAMS.length; k++) {
-          if (BASE_TEAMS[k].id === newT.id || BASE_TEAMS[k].name.toLowerCase() === newT.name.toLowerCase()) {
-            idx = k; break;
-          }
-        }
-        if (idx >= 0) {
-          BASE_TEAMS[idx].members = newT.members;
-          if (newT.rule) BASE_TEAMS[idx].rule = newT.rule;
-        } else {
-          BASE_TEAMS.push(newT);
-          teamState[newT.id] = { liquido:null, totalCard:null, fileName:null, processed:false };
-        }
-      });
-
-      // Reconstrói grid completo
-      var grid = document.getElementById('teamsGrid');
-      grid.innerHTML = '';
-      BASE_TEAMS.forEach(function(team) {
-        if (!teamState[team.id]) teamState[team.id] = { liquido:null, totalCard:null, fileName:null, processed:false };
-        teamState[team.id].processed = false;
-        teamState[team.id].totalCard = null;
-        grid.appendChild(buildCard(team));
-      });
-
-      // Pulsa cards
-      setTimeout(function() {
-        document.querySelectorAll('.team-card').forEach(function(c) {
-          c.classList.add('updating');
-          setTimeout(function() { c.classList.remove('updating'); }, 700);
-        });
-      }, 50);
-
-      document.getElementById('summaryRow').style.display = 'none';
-      document.getElementById('baseStatus').textContent = '✓ ' + valid.length + ' equipes atualizadas';
-      btn.innerHTML = '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/></svg> Atualizar base de backs';
-      showAlert('info', '✅ Base atualizada com <strong>' + file.name + '</strong> — ' + valid.length + ' equipes. Carregue os relatórios de cada equipe.');
-
-    } catch(err) {
-      document.getElementById('baseStatus').textContent = '⚠️ Erro';
-      btn.innerHTML = '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/></svg> Atualizar base de backs';
-      showAlert('warn', 'Erro ao atualizar base: ' + err.message);
-    }
-  };
-  reader.readAsArrayBuffer(file);
-}
 
 function parseCodeName(s) {
   // "NOME (12345)" ou "12345 - NOME"
