@@ -277,13 +277,14 @@ main{max-width:1180px;margin:0 auto;padding:1.75rem 1.5rem 5rem}
 
 <script>
 // ── BASE DE EQUIPES ──────────────────────────────────────────────────────────
-// Fonte: BACKOFFICE - NOVO.xlsx (15 equipes, 42 membros)
+// Fonte: BACKOFFICE - NOVO.xlsx (16 equipes, 46 membros) — atualizado 21/07/2026
 var BASE_TEAMS = [
   { id:'ABC', name:'ABC', rule:'VALOR CHEIO', members:[
     {code:'136940', name:'Marli',    obs:'',                              start:null,         end:null},
     {code:'148245', name:'Wendy',    obs:'Recebe até 17/04/2026',         start:null,         end:'17/04/2026'},
     {code:'207404', name:'Larissa',  obs:'Recebe até 30/01/2026',         start:null,         end:'30/01/2026'},
     {code:'206448', name:'Thauane',  obs:'Recebe a partir de 06/02/2026', start:'06/02/2026', end:null},
+    {code:'217313', name:'Glaucia',  obs:'Recebe a partir de 01/06/2026', start:'01/06/2026', end:null},
     {code:'211901', name:'Jessica',  obs:'',                              start:null,         end:null},
   ]},
   { id:'AP', name:'AP', rule:'1% e lançar o valor cheio', members:[
@@ -292,34 +293,30 @@ var BASE_TEAMS = [
     {code:'207287', name:'Beatriz', obs:'A partir de 01/05/2025', start:'01/05/2025', end:null},
   ]},
   { id:'TM', name:'TM', rule:'1% e lançar o valor cheio', members:[
-    {code:'66401',  name:'Myllena', obs:'Recebe até 12/01/2026',          start:null,         end:'12/01/2026'},
-    {code:'116467', name:'Débora',  obs:'',                               start:null,         end:null},
-    {code:'207574', name:'Elaindy', obs:'Recebe a partir de 09/02/2026',  start:'09/02/2026', end:null},
-    {code:'206021', name:'Leticia', obs:'',                               start:null,         end:null},
+    {code:'66401',  name:'Myllena', obs:'Recebe até 12/01/2026',         start:null,         end:'12/01/2026'},
+    {code:'116467', name:'Débora',  obs:'',                              start:null,         end:null},
+    {code:'207574', name:'Elaindy', obs:'Recebe a partir de 09/02/2026', start:'09/02/2026', end:null},
+    {code:'206021', name:'Leticia', obs:'',                              start:null,         end:null},
   ]},
   { id:'JB', name:'JB', rule:'1% e lançar o valor cheio', members:[
     {code:'207663', name:'Leonardo',       obs:'',                              start:null,         end:null},
     {code:'208009', name:'Raquel',         obs:'',                              start:null,         end:null},
-    {code:'208625', name:'Vitor Mesquita', obs:'A partir de 21/07/2026',        start:'21/07/2026', end:null},
+    {code:'208625', name:'Vitor Mesquita', obs:'Recebe a partir de 21/07/2026', start:'21/07/2026', end:null},
   ]},
   { id:'BACKOFFICE---RIO-MO', name:'BACKOFFICE - RIO MO', rule:'1% e lançar o valor cheio', members:[
-    {code:'208625', name:'Vitor',  obs:'',                        start:null,         end:null},
-    {code:'208810', name:'Thayna', obs:'Recebe até 17/05/2026',   start:null,         end:'17/05/2026'},
-    {code:'217107', name:'Thiago', obs:'A partir de 18/05/2026',  start:'18/05/2026', end:null},
+    {code:'208625', name:'Vitor',  obs:'',                       start:null,         end:null},
+    {code:'208810', name:'Thayna', obs:'Recebe até 17/05/2026',  start:null,         end:'17/05/2026'},
+    {code:'217107', name:'Thiago', obs:'A partir de 18/05/2026', start:'18/05/2026', end:null},
   ]},
   { id:'BACKOFFICE---RIO-FT', name:'BACKOFFICE - RIO FT', rule:'1% e lançar o valor cheio', members:[
     {code:'209835', name:'Anderson', obs:'',                       start:null,         end:null},
     {code:'208338', name:'Weslley',  obs:'',                       start:null,         end:null},
     {code:'211273', name:'Paola',    obs:'A partir de 20/05/2026', start:'20/05/2026', end:null},
   ]},
-  { id:'GV', name:'GV', rule:'1% e lançar o valor cheio', members:[
-    {code:'207559', name:'Marina',  obs:'', start:null, end:null},
-    {code:'206546', name:'Larissa', obs:'', start:null, end:null},
-  ]},
   { id:'BACKOFFICE---TS', name:'BACKOFFICE - TS', rule:'1% e lançar o valor cheio', members:[
-    {code:'67570',  name:'Adeliz', obs:'Recebe até 18/11/2025',   start:null,         end:'18/11/2025'},
-    {code:'209270', name:'Kelly',  obs:'A partir de 20/12/2025',  start:'20/12/2025', end:null},
-    {code:'202118', name:'Larissa',obs:'',                        start:null,         end:null},
+    {code:'67570',  name:'Adeliz', obs:'Recebe até 18/11/2025',  start:null,         end:'18/11/2025'},
+    {code:'209270', name:'Kelly',  obs:'A partir de 20/12/2025', start:'20/12/2025', end:null},
+    {code:'202118', name:'Larissa',obs:'',                       start:null,         end:null},
   ]},
   { id:'BACKOFFICE---IS', name:'BACKOFFICE - IS', rule:'1% e lançar o valor cheio', members:[
     {code:'212920', name:'Thamara',  obs:'', start:null, end:null},
@@ -330,6 +327,11 @@ var BASE_TEAMS = [
     {code:'209515', name:'Ana Beatriz', obs:'',                       start:null,         end:null},
     {code:'203289', name:'Cecília',     obs:'',                       start:null,         end:null},
     {code:'217111', name:'Talita',      obs:'A partir de 18/05/2026', start:'18/05/2026', end:null},
+  ]},
+  { id:'GV', name:'GV', rule:'1% e lançar o valor cheio', members:[
+    {code:'207559', name:'Marina',  obs:'',                       start:null,         end:null},
+    {code:'206546', name:'Larissa', obs:'',                       start:null,         end:null},
+    {code:'202587', name:'Tatiane', obs:'A partir de 13/07/2026', start:'13/07/2026', end:null},
   ]},
   { id:'BACKOFFICE---MB', name:'BACKOFFICE - MB', rule:'1% e lançar o valor cheio', members:[
     {code:'200738', name:'Barbara', obs:'Recebe até 17/02/2026', start:null, end:'17/02/2026'},
@@ -350,6 +352,10 @@ var BASE_TEAMS = [
   { id:'BACKOFFICE---RIO--JL', name:'BACKOFFICE - RIO JL', rule:'1% e lançar o valor cheio', members:[
     {code:'204616', name:'Andressa', obs:'',                       start:null,         end:null},
     {code:'217107', name:'Thiago',   obs:'A partir de 21/07/2026', start:'21/07/2026', end:null},
+  ]},
+  { id:'BACKOFFICE---RIO-WJ', name:'BACKOFFICE - RIO WJ', rule:'1% e lançar o valor cheio', members:[
+    {code:'214876', name:'Ana Flávia', obs:'',                       start:null,         end:null},
+    {code:'215492', name:'Geovane',    obs:'A partir de 03/08/2026', start:'03/08/2026', end:null},
   ]},
 ];
 
